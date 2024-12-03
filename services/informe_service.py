@@ -5,6 +5,7 @@ from DTOs.articles import ArticlesDTO
 from DTOs.isbns import ISBNsDTO
 from DTOs.patentsDTO import PatentsDTO
 from DTOs.projectDTO import ProjectsDTO
+from DTOs.humanindexDTO import HumanindexDTO
 from repositories.informe_repository import InformeRepository
 
 
@@ -41,6 +42,16 @@ class InformeService:
         isbns = self._get_documents_with_isbn(db, lambda date: f"{date.year}-{date.month:02d}", sex)
         isbns.time_lapse = "month"
         return isbns
+
+    def get_humaninedx_by_year(self, db, sex="ambos"):
+        humanindex = self._get_humanindex(db, lambda date: date.year, sex)
+        humanindex.time_lapse = "year"
+        return humanindex
+
+    def get_humanindex_by_month(self, db, sex="ambos"):
+        humanindex = self._get_humanindex(db, lambda date: f"{date.year}-{date.month:02d}", sex)
+        humanindex.time_lapse = "month"
+        return humanindex
 
     def get_proyectos(self, db, sex="ambos"):
         data = {}
@@ -99,7 +110,76 @@ class InformeService:
 
         data_list = [v for k, v in data.items()]
         data_list.sort(key=lambda d: d["name"])
-        print(data.values())
+        bar_keys.sort(key=lambda k: sum([d[k] for d in data.values() if k in d]))
+        bar_keys.reverse()
+
+        projects = ProjectsDTO(
+            from_year=min_year,
+            to_year=max_year,
+            data=data_list,
+            keys=keys,
+            bar_keys=bar_keys
+        )
+
+        return projects
+
+    def get_participaciones_proyectos(self, db, sex="ambos"):
+        data = {}
+        keys = ["Total"]
+        bar_keys = []
+        min_year = math.inf
+        max_year = -math.inf
+
+        for i, start_date, situation_date, conv, participante in self.informe_repository.get_participaciones_proyectos(db, sex):
+            year = situation_date.year
+            key = year
+            adding_flag = False
+            self._add_to_counter(key, data, "Total")
+
+            if "UNAM" in conv or "unam" in conv:
+                self._add_to_counter(key, data, "UNAM")
+                adding_flag = True
+                if "UNAM" not in bar_keys:
+                    bar_keys.append("UNAM")
+            if "CONACYT" in conv or "conacyt" in conv:
+                self._add_to_counter(key, data, "CONACYT")
+                adding_flag = True
+                if "CONACYT" not in bar_keys:
+                    bar_keys.append("CONACYT")
+            if "PAPIME" in conv:
+                self._add_to_counter(key, data, "PAPIME")
+                adding_flag = True
+                if "PAPIME" not in bar_keys:
+                    bar_keys.append("PAPIME")
+            if "PAPIIT" in conv:
+                self._add_to_counter(key, data, "PAPIIT")
+                adding_flag = True
+                if "PAPIIT" not in bar_keys:
+                    bar_keys.append("PAPIIT")
+            if "propios" in conv:
+                self._add_to_counter(key, data, "propios")
+                adding_flag = True
+                if "propios" not in bar_keys:
+                    bar_keys.append("propios")
+            if "Sector Público" in conv:
+                self._add_to_counter(key, data, "Sector Público")
+                adding_flag = True
+                if "Sector Público" not in bar_keys:
+                    bar_keys.append("Sector Público")
+            if "Sector Privado" in conv:
+                self._add_to_counter(key, data, "Sector Privado")
+                adding_flag = True
+                if "Sector Privado" not in bar_keys:
+                    bar_keys.append("Sector Privado")
+
+            if adding_flag:
+                if year < min_year:
+                    min_year = year
+                if year > max_year:
+                    max_year = year
+
+        data_list = [v for k, v in data.items()]
+        data_list.sort(key=lambda d: d["name"])
         bar_keys.sort(key=lambda k: sum([d[k] for d in data.values() if k in d]))
         bar_keys.reverse()
 
@@ -153,15 +233,83 @@ class InformeService:
 
         return patents
 
-    def get_humanindex(self, db, sex):
+    def _get_humanindex(self, db, name_gen, sex):
         data = {}
         keys = []
         min_year = math.inf
         max_year = -math.inf
 
+        for i, alcance, date in self.informe_repository.get_alcance_obras(db, sex):
+            adding_flag = False
+
+            key = name_gen(date)
+            if alcance == "Capítulo de un Libro":
+                self._add_to_counter(key, data, "Capitulo")
+                self._add_to_counter(key, data, "Total")
+                adding_flag = True
+                if "Capitulo" not in keys:
+                    keys.append("Capitulo")
+                if "Total" not in keys:
+                    keys.append("Total")
+            elif alcance == "Libro Completo":
+                self._add_to_counter(key, data, "Libro")
+                self._add_to_counter(key, data, "Total")
+                adding_flag = True
+                if "Libro" not in keys:
+                    keys.append("Libro")
+                if "Total" not in keys:
+                    keys.append("Total")
+
+            if adding_flag:
+                year = date.year
+                if year < min_year:
+                    min_year = year
+                if year > max_year:
+                    max_year = year
+
+        for i, alcance, date, autor_id in self.informe_repository.get_participaciones_obras(db, sex):
+            adding_flag = False
+            key = name_gen(date)
+            if alcance == "Capítulo de un Libro":
+                self._add_to_counter(key, data, "ParticipacionesCapitulos")
+                adding_flag = True
+                if "ParticipacionesCapitulos" not in keys:
+                    keys.append("ParticipacionesCapitulos")
+            if alcance == "Libro Completo":
+                self._add_to_counter(key, data, "ParticipacionesLibros")
+                adding_flag = True
+                if "ParticipacionesLibros" not in keys:
+                    keys.append("ParticipacionesLibros")
+
+            if adding_flag:
+                year = date.year
+                if year < min_year:
+                    min_year = year
+                if year > max_year:
+                    max_year = year
+
+        for data_key in data:
+            for k in keys:
+                if k not in data[data_key]:
+                    data[data_key][k] = 0
+
+        data_list = [v for k, v in data.items()]
+        data_list.sort(key=lambda d: d["name"])
+        keys.sort(key=lambda k: sum([d[k] for d in data.values() if k in d]))
+        keys.reverse()
+
+        humanindex = HumanindexDTO(
+            from_year=min_year,
+            to_year=max_year,
+            time_lapse="",
+            data=data_list,
+            keys=keys
+        )
+        return humanindex
+
     def _get_documents_with_isbn(self, db, name_gen, sex):
         data = {}
-        keys = ["isbn"]
+        keys = ["Obras", "Participaciones en Obras"]
         min_year = math.inf
         max_year = -math.inf
 
@@ -173,7 +321,17 @@ class InformeService:
                 max_year = year
 
             key = name_gen(date)
-            self._add_to_counter(key, data, "isbn")
+            self._add_to_counter(key, data, "Obras")
+
+        for i, isbn, date in self.informe_repository.get_participaciones_isbn(db, sex):
+            year = date.year
+            if year < min_year:
+                min_year = year
+            if year > max_year:
+                max_year = year
+
+            key = name_gen(date)
+            self._add_to_counter(key, data, "Participaciones en Obras")
 
         data_list = [v for k, v in data.items()]
         data_list.sort(key=lambda d: d["name"])
@@ -295,4 +453,4 @@ class InformeService:
             else:
                 data[name][data_key] = 1
         else:
-            data[name] = {"name": name}
+            data[name] = {"name": name, data_key: 1}

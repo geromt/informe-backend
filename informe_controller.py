@@ -91,6 +91,32 @@ def get_isbn_by_month():
     return jsonify(result.to_dict()), 200
 
 
+@app.route("/humanindex/year", methods=["GET"])
+@cross_origin()
+def get_humanindex_by_year():
+    args = request.args.to_dict()
+    sex = "ambos"
+    if "sexo" in args:
+        sex = args["sexo"]
+        if sex != "M" and sex != "F":
+            return "Sexo no válido", 400
+    result = informe_service.get_humaninedx_by_year(db, sex)
+    return jsonify(result.to_dict()), 200
+
+
+@app.route("/humanindex/month", methods=["GET"])
+@cross_origin()
+def get_humanindex_by_month():
+    args = request.args.to_dict()
+    sex = "ambos"
+    if "sexo" in args:
+        sex = args["sexo"]
+        if sex != "M" and sex != "F":
+            return "Sexo no válido", 400
+    result = informe_service.get_humanindex_by_month(db, sex)
+    return jsonify(result.to_dict()), 200
+
+
 @app.route("/proyectos/", methods=["GET"])
 @cross_origin()
 def get_projects():
@@ -101,6 +127,19 @@ def get_projects():
         if sex != "M" and sex != "F":
             return "Sexo no válido", 400
     result = informe_service.get_proyectos(db, sex)
+    return jsonify(result.to_dict()), 200
+
+
+@app.route("/participaciones-proyectos/", methods=["GET"])
+@cross_origin()
+def get_participaciones_projects():
+    args = request.args.to_dict()
+    sex = "ambos"
+    if "sexo" in args:
+        sex = args["sexo"]
+        if sex != "M" and sex != "F":
+            return "Sexo no válido", 400
+    result = informe_service.get_participaciones_proyectos(db, sex)
     return jsonify(result.to_dict()), 200
 
 

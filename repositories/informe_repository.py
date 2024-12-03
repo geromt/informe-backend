@@ -68,7 +68,30 @@ class InformeRepository:
             )
         else:
             stmt = select(Libros.Id, Libros.ObraIsbn, Libros.FechaPublicacion).where(Libros.ObraIsbn != None)
-        print(stmt)
+        with db.engine.connect() as conn:
+            return conn.execute(stmt)
+
+    def get_participaciones_isbn(self, db, sex):
+        if sex == "M" or sex == "F":
+            sex_filter = "Masculino" if sex == "M" else "Femenino"
+            stmt = select(
+                Libros.Id,
+                Libros.ObraIsbn,
+                Libros.FechaPublicacion
+            ).where(
+                Libros.ObraIsbn != None
+            ).filter(
+                Libros.Id == Autoreslibros.RefLibro
+            ).filter(
+                Autoreslibros.Genero == sex_filter
+            )
+        else:
+            stmt = select(Libros.Id, Libros.ObraIsbn, Libros.FechaPublicacion
+            ).where(
+                Libros.ObraIsbn != None
+            ).filter(
+                Libros.Id == Autoreslibros.RefLibro
+            )
         with db.engine.connect() as conn:
             return conn.execute(stmt)
 
@@ -87,7 +110,32 @@ class InformeRepository:
             )
         else:
             stmt = select(Proyectos.Identificador, Proyectos.FechaInicio, Proyectos.FechaSituacion, Proyectos.Convocatoria)
-        print(stmt)
+        with db.engine.connect() as conn:
+            return conn.execute(stmt)
+
+    def get_participaciones_proyectos(self, db, sex):
+        if sex == "M" or sex == "F":
+            sex_filter = "Masculino" if sex == "M" else "Femenino"
+            stmt = select(
+                Proyectos.Identificador,
+                Proyectos.FechaInicio,
+                Proyectos.FechaSituacion,
+                Proyectos.Convocatoria,
+                Participantesproyectos.Identificador
+            ).filter(
+                Proyectos.Identificador == Participantesproyectos.RefProyecto
+            ).filter(
+                Participantesproyectos.Genero == sex_filter
+            )
+        else:
+            stmt = select(Proyectos.Identificador,
+                          Proyectos.FechaInicio,
+                          Proyectos.FechaSituacion,
+                          Proyectos.Convocatoria,
+                          Participantesproyectos.Identificador
+            ).filter(
+                Proyectos.Identificador == Participantesproyectos.RefProyecto
+            )
         with db.engine.connect() as conn:
             return conn.execute(stmt)
 
