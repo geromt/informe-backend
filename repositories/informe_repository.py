@@ -12,6 +12,29 @@ from Models.proyectos import Proyectos
 
 
 class InformeRepository:
+    def get_deserialize_documents(self, db, sex, type, year=None, page=0):
+        stmt = select(
+            Libros.Id,
+            Libros.ObraTitulo,
+            Libros.ObraEditorial,
+            Libros.Titulo,
+            Libros.FechaPublicacion
+        )
+        if sex == "M" or sex == "F":
+            sex_filter = "Masculino" if sex == "M" else "Femenino"
+            stmt = stmt.filter(
+                Libros.Id == Autoreslibros.RefLibro
+            ).filter(
+                Autoreslibros.Genero == sex_filter
+            )
+        if type == "wos":
+            stmt = stmt.filter(Libros.WosId != None)
+
+        stmt = stmt.limit(100).offset(page * 100)
+        print(stmt)
+        with db.engine.connect() as conn:
+            return conn.execute(stmt)
+
     def get_revistas(self, db, sex):
         if sex == "M" or sex == "F":
             sex_filter = "Masculino" if sex == "M" else "Femenino"
@@ -48,7 +71,6 @@ class InformeRepository:
                 Libros.PubmedId,
                 Libros.ScopusId,
                 Libros.FechaPublicacion)
-        print(stmt)
         with db.engine.connect() as conn:
             return conn.execute(stmt)
 

@@ -1,5 +1,6 @@
 import math
 
+from DTOs.deserializeDocuments import DeserializeDocumentsDTO
 from DTOs.documents import DocumentsDTO
 from DTOs.articles import ArticlesDTO
 from DTOs.isbns import ISBNsDTO
@@ -12,6 +13,23 @@ from repositories.informe_repository import InformeRepository
 class InformeService:
     def __init__(self):
         self.informe_repository = InformeRepository()
+
+    def get_deserialize_document(self, db, sex="ambos", type="wos", page=0):
+        data = []
+        documents = self.informe_repository.get_deserialize_documents(db, sex=sex, type=type, page=page)
+        for i, obraTitulo, obraEditorial, titulo, date in documents:
+            data.append({
+                "obraTitulo": obraTitulo,
+                "obraEditorial": obraEditorial,
+                "titulo": titulo,
+                "fechaPublicacion": date
+            })
+
+        deserializeDoc = DeserializeDocumentsDTO(
+            datakey=type,
+            data=data
+        )
+        return deserializeDoc
 
     def get_articles_by_year(self, db, sex="ambos"):
         articles = self._get_articles(db, lambda date: date.year, sex)
@@ -332,6 +350,11 @@ class InformeService:
 
             key = name_gen(date)
             self._add_to_counter(key, data, "Participaciones en Obras")
+
+        for data_key in data:
+            for k in keys:
+                if k not in data[data_key]:
+                    data[data_key][k] = 0
 
         data_list = [v for k, v in data.items()]
         data_list.sort(key=lambda d: d["name"])

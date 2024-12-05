@@ -13,6 +13,18 @@ db = SQLAlchemy(app)
 informe_service = InformeService()
 
 
+@app.route("/deserialize/documents/<datakey>/<page>")
+@cross_origin()
+def get_deserialize_documents(datakey, page):
+    args = request.args.to_dict()
+    sex = "ambos"
+    if "sexo" in args:
+        sex = args["sexo"]
+        if sex != "M" and sex != "F":
+            return "Sexo no válido", 400
+    result = informe_service.get_deserialize_document(db, sex, datakey, int(page))
+    return jsonify(result.to_dict()), 200
+
 @app.route("/documents/year/", methods=["GET"])
 @cross_origin()
 def get_documents_by_year():
