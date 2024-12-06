@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from Models.autoreslibros import Autoreslibros
 from Models.autoresrevistas import Autoresrevistas
@@ -18,10 +18,10 @@ class InformeRepository:
             Libros.ObraTitulo,
             Libros.ObraEditorial,
             Libros.Titulo,
+            Libros.AccesoElectronico,
             Libros.FechaPublicacion
         )
         if sex == "M" or sex == "F":
-            print(sex)
             sex_filter = "Masculino" if sex == "M" else "Femenino"
             stmt = stmt.filter(
                 Libros.Identificador == Autoreslibros.RefPublicacion
@@ -29,18 +29,114 @@ class InformeRepository:
                 Autoreslibros.Genero == sex_filter
             )
         if title:
-            print(title)
             stmt = stmt.filter(Libros.Titulo.like(f"%{title}%"))
-        print(from_date, to_date)
         stmt = stmt.filter(Libros.FechaPublicacion >= from_date).filter(Libros.FechaPublicacion <= to_date)
 
-        print(data_key)
         if "wos" in data_key:
             stmt = stmt.filter(Libros.WosId != None)
         if "scotus" in data_key:
             stmt = stmt.filter(Libros.ScopusId != None)
         if data_key == "pubmed":
             stmt = stmt.filter(Libros.PubmedId != None)
+
+        stmt = stmt.limit(100).offset(page * 100)
+        with db.engine.connect() as conn:
+            return conn.execute(stmt)
+
+    def get_deserialize_articles(self, db, from_date, to_date, data_key, page=0, sex=None, title=None):
+        stmt = select(
+            Revistas.Identificador,
+            Revistas.RevistaTitulo,
+            Revistas.RevistaEditorial,
+            Revistas.Titulo,
+            Revistas.AccesoElectronico,
+            Revistas.FechaPublicacion
+        )
+        if sex == "M" or sex == "F":
+            sex_filter = "Masculino" if sex == "M" else "Femenino"
+            stmt = stmt.filter(
+                Revistas.Identificador == Autoresrevistas.RefPublicacion
+            ).filter(
+                Autoresrevistas.Genero == sex_filter
+            )
+        if title:
+            stmt = stmt.filter(Revistas.Titulo.like(f"%{title}%"))
+        stmt = stmt.filter(Revistas.FechaPublicacion >= from_date).filter(Revistas.FechaPublicacion <= to_date)
+
+        if "wos" in data_key:
+            stmt = stmt.filter(Revistas.WosId != None)
+        if "scotus" in data_key:
+            stmt = stmt.filter(Revistas.ScopusId != None)
+        if data_key == "pubmed":
+            stmt = stmt.filter(Revistas.PubMedId != None)
+
+        stmt = stmt.limit(100).offset(page * 100)
+        with db.engine.connect() as conn:
+            return conn.execute(stmt)
+
+    def get_deserialize_isbn(self, db, from_date, to_date, data_key="isbn", page=0, sex=None, title=None):
+        stmt = select(
+            Libros.Identificador,
+            Libros.ObraTitulo,
+            Libros.ObraEditorial,
+            Libros.Titulo,
+            Libros.AccesoElectronico,
+            Libros.FechaPublicacion
+        )
+        if sex == "M" or sex == "F":
+            sex_filter = "Masculino" if sex == "M" else "Femenino"
+            stmt = stmt.filter(
+                Libros.Identificador == Autoreslibros.RefPublicacion
+            ).filter(
+                Autoreslibros.Genero == sex_filter
+            )
+        if title:
+            stmt = stmt.filter(Libros.Titulo.like(f"%{title}%"))
+        stmt = stmt.filter(Libros.FechaPublicacion >= from_date).filter(Libros.FechaPublicacion <= to_date)
+
+        stmt = stmt.filter(Libros.ObraIsbn != None)
+        if data_key == "participaciones_isbn" and (sex != "M" and sex != "F"):
+            stmt = stmt.filter(Libros.Identificador == Autoreslibros.RefPublicacion)
+
+        stmt = stmt.limit(100).offset(page * 100)
+        with db.engine.connect() as conn:
+            return conn.execute(stmt)
+
+    def get_deserialize_humanindex(self, db, from_date, to_date, data_key="isbn", page=0, sex=None, title=None):
+        stmt = select(
+            Libros.Identificador,
+            Libros.ObraTitulo,
+            Libros.ObraEditorial,
+            Libros.Titulo,
+            Libros.AccesoElectronico,
+            Libros.FechaPublicacion
+        )
+        if sex == "M" or sex == "F":
+            sex_filter = "Masculino" if sex == "M" else "Femenino"
+            stmt = stmt.filter(
+                Libros.Identificador == Autoreslibros.RefPublicacion
+            ).filter(
+                Autoreslibros.Genero == sex_filter
+            )
+        if title:
+            stmt = stmt.filter(Libros.Titulo.like(f"%{title}%"))
+        stmt = stmt.filter(Libros.FechaPublicacion >= from_date).filter(Libros.FechaPublicacion <= to_date)
+
+        print(data_key)
+        if "Libro" == data_key:
+            stmt = stmt.filter(Libros.Alcance == "Libro Completo")
+        elif data_key == "Capitulo":
+            stmt = stmt.filter(Libros.Alcance == "Capítulo de un Libro")
+        elif data_key == "Total":
+            stmt = stmt.filter(or_(Libros.Alcance == "Libro Completo", Libros.Alcance == "Capítulo de un Libro"))
+        elif data_key == "ParticipacionesCapitulos":
+            if sex != "M" and sex != "F":
+                stmt = stmt.filter(Libros.Identificador == Autoreslibros.RefPublicacion)
+            stmt = stmt.filter(Libros.Alcance == "Capítulo de un Libro")
+        elif data_key == "ParticipacionesLibros":
+            if sex != "M" and sex != "F":
+                stmt = stmt.filter(Libros.Identificador == Autoreslibros.RefPublicacion)
+            stmt = stmt.filter(Libros.Alcance == "Libro Completo")
 
         stmt = stmt.limit(100).offset(page * 100)
         print(stmt)
@@ -228,7 +324,7 @@ class InformeRepository:
                 Libros.FechaPublicacion,
                 Autoreslibros.Identificador
             ).filter(
-                Libros.Id == Autoreslibros.RefPublicacion
+                Libros.Identificador == Autoreslibros.RefPublicacion
             ).filter(
                 Autoreslibros.Genero == sex_filter
             )
@@ -239,7 +335,7 @@ class InformeRepository:
                 Libros.FechaPublicacion,
                 Autoreslibros.Identificador
             ).filter(
-                Libros.Id == Autoreslibros.RefPublicacion
+                Libros.Identificador == Autoreslibros.RefPublicacion
             )
 
         with db.engine.connect() as conn:

@@ -27,6 +27,12 @@ def get_deserialize(data_type, time_lapse, time, data_key, page):
 
     if data_type == "documents":
         result = informe_service.get_deserialize_document(db, time_lapse, time, data_key, int(page), sex, title)
+    elif data_type == "articles":
+        result = informe_service.get_deserialize_articles(db, time_lapse, time, data_key, int(page), sex, title)
+    elif data_type == "isbn":
+        result = informe_service.get_deserialize_isbn(db, time_lapse, time, data_key, int(page), sex, title)
+    elif data_type == "humanindex":
+        result = informe_service.get_deserialize_humanindex(db, time_lapse, time, data_key, int(page), sex, title)
 
     return jsonify(result.to_dict()), 200
 

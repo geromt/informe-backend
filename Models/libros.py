@@ -8,6 +8,7 @@ class Libros(db.Model):
     ObraTitulo = db.Column(db.Text, nullable=True)
     ObraEditorial = db.Column(db.Text, nullable=True)
     Titulo = db.Column(db.Text, nullable=True)
+    AccesoElectronico = db.Column(db.Text, nullable=True)
     Alcance = db.Column(db.String(30), nullable=True)
     ObraIsbn = db.Column(db.String(20), nullable=True)
     WosId = db.Column(db.String(20), nullable=True)

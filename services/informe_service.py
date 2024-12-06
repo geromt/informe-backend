@@ -1,6 +1,6 @@
 import math
 
-from DTOs.deserializeDocuments import DeserializeDocumentsDTO
+from DTOs.deserializeDTO import DeserializeDTO
 from DTOs.documents import DocumentsDTO
 from DTOs.articles import ArticlesDTO
 from DTOs.isbns import ISBNsDTO
@@ -18,16 +18,78 @@ class InformeService:
         data = []
         from_date, to_date = self._get_from_to_date(time_lapse, time)
         documents = self.informe_repository.get_deserialize_documents(db, from_date, to_date, data_key, page, sex, title)
-        for i, obraTitulo, obraEditorial, titulo, date in documents:
+        for i, obraTitulo, obraEditorial, titulo, accesoElectronico, date in documents:
             data.append({
                 "obraTitulo": obraTitulo,
                 "obraEditorial": obraEditorial,
                 "titulo": titulo,
+                "accesoElectronico": accesoElectronico,
                 "fechaPublicacion": date
             })
 
-        deserializeDoc = DeserializeDocumentsDTO(
-            datakey=data_key,
+        deserializeDoc = DeserializeDTO(
+            data_type="documents",
+            data_key=data_key,
+            data=data
+        )
+        return deserializeDoc
+
+    def get_deserialize_articles(self, db, time_lapse, time, data_key, page=0, sex=None, title=None):
+        data = []
+        from_date, to_date = self._get_from_to_date(time_lapse, time)
+        documents = self.informe_repository.get_deserialize_articles(db, from_date, to_date, data_key, page, sex, title)
+        for i, revistaTitulo, revistaEditorial, titulo, accesoElectronico, date in documents:
+            data.append({
+                "revistaTitulo": revistaTitulo,
+                "revistaEditorial": revistaEditorial,
+                "titulo": titulo,
+                "accesoElectronico": accesoElectronico,
+                "fechaPublicacion": date
+            })
+
+        deserializeDoc = DeserializeDTO(
+            data_type="documents",
+            data_key=data_key,
+            data=data
+        )
+        return deserializeDoc
+
+    def get_deserialize_isbn(self, db, time_lapse, time, data_key, page=0, sex=None, title=None):
+        data = []
+        from_date, to_date = self._get_from_to_date(time_lapse, time)
+        documents = self.informe_repository.get_deserialize_isbn(db, from_date, to_date, data_key, page, sex, title)
+        for i, obraTitulo, obraEditorial, titulo, accesoElectronico, date in documents:
+            data.append({
+                "obraTitulo": obraTitulo,
+                "obraEditorial": obraEditorial,
+                "titulo": titulo,
+                "accesoElectronico": accesoElectronico,
+                "fechaPublicacion": date
+            })
+
+        deserializeDoc = DeserializeDTO(
+            data_type="documents",
+            data_key=data_key,
+            data=data
+        )
+        return deserializeDoc
+
+    def get_deserialize_humanindex(self, db, time_lapse, time, data_key, page=0, sex=None, title=None):
+        data = []
+        from_date, to_date = self._get_from_to_date(time_lapse, time)
+        documents = self.informe_repository.get_deserialize_humanindex(db, from_date, to_date, data_key, page, sex, title)
+        for i, obraTitulo, obraEditorial, titulo, accesoElectronico, date in documents:
+            data.append({
+                "obraTitulo": obraTitulo,
+                "obraEditorial": obraEditorial,
+                "titulo": titulo,
+                "accesoElectronico": accesoElectronico,
+                "fechaPublicacion": date
+            })
+
+        deserializeDoc = DeserializeDTO(
+            data_type="documents",
+            data_key=data_key,
             data=data
         )
         return deserializeDoc
