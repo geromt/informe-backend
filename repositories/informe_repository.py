@@ -12,23 +12,35 @@ from Models.proyectos import Proyectos
 
 
 class InformeRepository:
-    def get_deserialize_documents(self, db, sex, type, year=None, page=0):
+    def get_deserialize_documents(self, db, from_date, to_date, data_key, page=0, sex=None, title=None):
         stmt = select(
-            Libros.Id,
+            Libros.Identificador,
             Libros.ObraTitulo,
             Libros.ObraEditorial,
             Libros.Titulo,
             Libros.FechaPublicacion
         )
         if sex == "M" or sex == "F":
+            print(sex)
             sex_filter = "Masculino" if sex == "M" else "Femenino"
             stmt = stmt.filter(
-                Libros.Id == Autoreslibros.RefLibro
+                Libros.Identificador == Autoreslibros.RefPublicacion
             ).filter(
                 Autoreslibros.Genero == sex_filter
             )
-        if type == "wos":
+        if title:
+            print(title)
+            stmt = stmt.filter(Libros.Titulo.like(f"%{title}%"))
+        print(from_date, to_date)
+        stmt = stmt.filter(Libros.FechaPublicacion >= from_date).filter(Libros.FechaPublicacion <= to_date)
+
+        print(data_key)
+        if "wos" in data_key:
             stmt = stmt.filter(Libros.WosId != None)
+        if "scotus" in data_key:
+            stmt = stmt.filter(Libros.ScopusId != None)
+        if data_key == "pubmed":
+            stmt = stmt.filter(Libros.PubmedId != None)
 
         stmt = stmt.limit(100).offset(page * 100)
         print(stmt)
@@ -54,19 +66,19 @@ class InformeRepository:
         if sex == "M" or sex == "F":
             sex_filter = "Masculino" if sex == "M" else "Femenino"
             stmt = select(
-                Libros.Id,
+                Libros.Identificador,
                 Libros.WosId,
                 Libros.PubmedId,
                 Libros.ScopusId,
                 Libros.FechaPublicacion
             ).filter(
-                Libros.Id == Autoreslibros.RefLibro
+                Libros.Identificador == Autoreslibros.RefPublicacion
             ).filter(
                 Autoreslibros.Genero == sex_filter
             )
         else:
             stmt = select(
-                Libros.Id,
+                Libros.Identificador,
                 Libros.WosId,
                 Libros.PubmedId,
                 Libros.ScopusId,
@@ -78,13 +90,13 @@ class InformeRepository:
         if sex == "M" or sex == "F":
             sex_filter = "Masculino" if sex == "M" else "Femenino"
             stmt = select(
-                Libros.Id,
+                Libros.Identificador,
                 Libros.ObraIsbn,
                 Libros.FechaPublicacion
             ).where(
                 Libros.ObraIsbn != None
             ).filter(
-                Libros.Id == Autoreslibros.RefLibro
+                Libros.Identificador == Autoreslibros.RefPublicacion
             ).filter(
                 Autoreslibros.Genero == sex_filter
             )
@@ -97,13 +109,13 @@ class InformeRepository:
         if sex == "M" or sex == "F":
             sex_filter = "Masculino" if sex == "M" else "Femenino"
             stmt = select(
-                Libros.Id,
+                Libros.Identificador,
                 Libros.ObraIsbn,
                 Libros.FechaPublicacion
             ).where(
                 Libros.ObraIsbn != None
             ).filter(
-                Libros.Id == Autoreslibros.RefLibro
+                Libros.Identificador == Autoreslibros.RefPublicacion
             ).filter(
                 Autoreslibros.Genero == sex_filter
             )
@@ -112,7 +124,7 @@ class InformeRepository:
             ).where(
                 Libros.ObraIsbn != None
             ).filter(
-                Libros.Id == Autoreslibros.RefLibro
+                Libros.Identificador == Autoreslibros.RefPublicacion
             )
         with db.engine.connect() as conn:
             return conn.execute(stmt)
@@ -189,17 +201,17 @@ class InformeRepository:
         if sex == "M" or sex == "F":
             sex_filter = "Masculino" if sex == "M" else "Femenino"
             stmt = select(
-                Libros.Id,
+                Libros.Identificador,
                 Libros.Alcance,
                 Libros.FechaPublicacion
             ).filter(
-                Libros.Id == Autoreslibros.RefLibro
+                Libros.Id == Autoreslibros.RefPublicacion
             ).filter(
                 Autoreslibros.Genero == sex_filter
             )
         else:
             stmt = select(
-                Libros.Id,
+                Libros.Identificador,
                 Libros.Alcance,
                 Libros.FechaPublicacion
             )
@@ -211,23 +223,23 @@ class InformeRepository:
         if sex == "M" or sex == "F":
             sex_filter = "Masculino" if sex == "M" else "Femenino"
             stmt = select(
-                Libros.Id,
+                Libros.Identificador,
                 Libros.Alcance,
                 Libros.FechaPublicacion,
                 Autoreslibros.Identificador
             ).filter(
-                Libros.Id == Autoreslibros.RefLibro
+                Libros.Id == Autoreslibros.RefPublicacion
             ).filter(
                 Autoreslibros.Genero == sex_filter
             )
         else:
             stmt = select(
-                Libros.Id,
+                Libros.Identificador,
                 Libros.Alcance,
                 Libros.FechaPublicacion,
                 Autoreslibros.Identificador
             ).filter(
-                Libros.Id == Autoreslibros.RefLibro
+                Libros.Id == Autoreslibros.RefPublicacion
             )
 
         with db.engine.connect() as conn:

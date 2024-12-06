@@ -4,7 +4,7 @@ db = SQLAlchemy()
 
 
 class Libros(db.Model):
-    Id = db.Column(db.Integer, primary_key=True)
+    Identificador = db.Column(db.Integer, primary_key=True)
     ObraTitulo = db.Column(db.Text, nullable=True)
     ObraEditorial = db.Column(db.Text, nullable=True)
     Titulo = db.Column(db.Text, nullable=True)

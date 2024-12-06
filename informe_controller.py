@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 from services.informe_service import InformeService
+from validators.informe_validator import validate_sex
 from flask_sqlalchemy import SQLAlchemy
 
 
@@ -13,16 +14,20 @@ db = SQLAlchemy(app)
 informe_service = InformeService()
 
 
-@app.route("/deserialize/documents/<datakey>/<page>")
+@app.route("/deserialize/<data_type>/<time_lapse>/<time>/<data_key>/<page>")
 @cross_origin()
-def get_deserialize_documents(datakey, page):
+def get_deserialize(data_type, time_lapse, time, data_key, page):
     args = request.args.to_dict()
-    sex = "ambos"
-    if "sexo" in args:
-        sex = args["sexo"]
-        if sex != "M" and sex != "F":
-            return "Sexo no válido", 400
-    result = informe_service.get_deserialize_document(db, sex, datakey, int(page))
+    sex = validate_sex(args)
+    if not sex:
+        return "Sexo no válido", 400
+
+    print(sex)
+    title = args["titulo"] if "titulo" in args else None
+
+    if data_type == "documents":
+        result = informe_service.get_deserialize_document(db, time_lapse, time, data_key, int(page), sex, title)
+
     return jsonify(result.to_dict()), 200
 
 @app.route("/documents/year/", methods=["GET"])

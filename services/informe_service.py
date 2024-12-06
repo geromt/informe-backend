@@ -14,9 +14,10 @@ class InformeService:
     def __init__(self):
         self.informe_repository = InformeRepository()
 
-    def get_deserialize_document(self, db, sex="ambos", type="wos", page=0):
+    def get_deserialize_document(self, db, time_lapse, time, data_key, page=0, sex=None, title=None):
         data = []
-        documents = self.informe_repository.get_deserialize_documents(db, sex=sex, type=type, page=page)
+        from_date, to_date = self._get_from_to_date(time_lapse, time)
+        documents = self.informe_repository.get_deserialize_documents(db, from_date, to_date, data_key, page, sex, title)
         for i, obraTitulo, obraEditorial, titulo, date in documents:
             data.append({
                 "obraTitulo": obraTitulo,
@@ -26,10 +27,22 @@ class InformeService:
             })
 
         deserializeDoc = DeserializeDocumentsDTO(
-            datakey=type,
+            datakey=data_key,
             data=data
         )
         return deserializeDoc
+
+    def _get_from_to_date(self, time_lapse, time):
+        if time_lapse == "year":
+            return f"{time}-01-01", f"{time}-12-31"
+        else:
+            if time.split("-")[1] in ["01", "03", "05", "07","08", "10", "12"]:
+                return f"{time}-01", f"{time}-31"
+            elif time.split("-")[1] == "02":
+                return f"{time}-01", f"{time}-28"
+            else:
+                return f"{time}-01", f"{time}-30"
+
 
     def get_articles_by_year(self, db, sex="ambos"):
         articles = self._get_articles(db, lambda date: date.year, sex)
