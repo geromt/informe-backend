@@ -147,14 +147,24 @@ class InformeRepository:
         if sex == "M" or sex == "F":
             sex_filter = "Masculino" if sex == "M" else "Femenino"
             stmt = select(
-                Revistas
+                Revistas.Identificador,
+                Revistas.WosId,
+                Revistas.PubMedId,
+                Revistas.ScopusId,
+                Revistas.FechaPublicacion
             ).filter(
                 Revistas.Identificador == Autoresrevistas.RefPublicacion
             ).filter(
                 Autoresrevistas.Genero == sex_filter
             )
         else:
-            stmt = select(Revistas)
+            stmt = select(
+                Revistas.Identificador,
+                Revistas.WosId,
+                Revistas.PubMedId,
+                Revistas.ScopusId,
+                Revistas.FechaPublicacion
+            )
         with db.engine.connect() as conn:
             return conn.execute(stmt)
 
@@ -197,7 +207,7 @@ class InformeRepository:
                 Autoreslibros.Genero == sex_filter
             )
         else:
-            stmt = select(Libros.Id, Libros.ObraIsbn, Libros.FechaPublicacion).where(Libros.ObraIsbn != None)
+            stmt = select(Libros.Identificador, Libros.ObraIsbn, Libros.FechaPublicacion).where(Libros.ObraIsbn != None)
         with db.engine.connect() as conn:
             return conn.execute(stmt)
 
@@ -216,7 +226,7 @@ class InformeRepository:
                 Autoreslibros.Genero == sex_filter
             )
         else:
-            stmt = select(Libros.Id, Libros.ObraIsbn, Libros.FechaPublicacion
+            stmt = select(Libros.Identificador, Libros.ObraIsbn, Libros.FechaPublicacion
             ).where(
                 Libros.ObraIsbn != None
             ).filter(
