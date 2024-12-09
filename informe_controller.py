@@ -22,7 +22,6 @@ def get_deserialize(data_type, time_lapse, time, data_key, page):
     if not sex:
         return "Sexo no válido", 400
 
-    print(sex)
     title = args["titulo"] if "titulo" in args else None
 
     if data_type == "documents":
@@ -33,32 +32,30 @@ def get_deserialize(data_type, time_lapse, time, data_key, page):
         result = informe_service.get_deserialize_isbn(db, time_lapse, time, data_key, int(page), sex, title)
     elif data_type == "humanindex":
         result = informe_service.get_deserialize_humanindex(db, time_lapse, time, data_key, int(page), sex, title)
+    elif data_type == "projects":
+        result = informe_service.get_deserialize_projects(db, time_lapse, time, data_key, int(page), sex, title)
+    elif data_type == "participaciones-projects":
+        result = informe_service.get_deserialize_projects(db, time_lapse, time, data_key, int(page), sex, title, True)
+    elif data_type == "patentes-secciones":
+        result = informe_service.get_deserialize_patentes_secciones(db, data_key, int(page), title)
 
     return jsonify(result.to_dict()), 200
 
-@app.route("/documents/year/", methods=["GET"])
+@app.route("/documents/<time_lapse>/", methods=["GET"])
 @cross_origin()
-def get_documents_by_year():
+def get_documents_by_year(time_lapse):
     args = request.args.to_dict()
-    sex = "ambos"
-    if "sexo" in args:
-        sex = args["sexo"]
-        if sex != "M" and sex != "F":
-            return "Sexo no válido", 400
-    result = informe_service.get_documents_by_year(db, sex)
-    return jsonify(result.to_dict()), 200
+    sex = validate_sex(args)
+    if not sex:
+        return "Sexo no válido", 400
 
+    if time_lapse == "year":
+        result = informe_service.get_documents_by_year(db, sex)
+    elif time_lapse == "month":
+        result = informe_service.get_documents_by_month(db, sex)
+    else:
+        return "Time Lapse no válido", 400
 
-@app.route("/documents/month/", methods=["GET"])
-@cross_origin()
-def get_documents_by_month():
-    args = request.args.to_dict()
-    sex = "ambos"
-    if "sexo" in args:
-        sex = args["sexo"]
-        if sex != "M" and sex != "F":
-            return "Sexo no válido", 400
-    result = informe_service.get_documents_by_month(db, sex)
     return jsonify(result.to_dict()), 200
 
 
@@ -164,6 +161,12 @@ def get_participaciones_projects():
             return "Sexo no válido", 400
     result = informe_service.get_participaciones_proyectos(db, sex)
     return jsonify(result.to_dict()), 200
+
+@app.route("/patentes/count/", methods=["GET"])
+@cross_origin()
+def get_patentes_count():
+    result = informe_service.get_patentes_count(db)
+    return jsonify(result), 200
 
 
 @app.route("/patentes/", methods=["GET"])

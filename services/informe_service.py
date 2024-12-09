@@ -17,7 +17,8 @@ class InformeService:
     def get_deserialize_document(self, db, time_lapse, time, data_key, page=0, sex=None, title=None):
         data = []
         from_date, to_date = self._get_from_to_date(time_lapse, time)
-        documents = self.informe_repository.get_deserialize_documents(db, from_date, to_date, data_key, page, sex, title)
+        documents = self.informe_repository.get_deserialize_documents(db, from_date, to_date, data_key, page, sex,
+                                                                      title)
         for i, obraTitulo, obraEditorial, titulo, accesoElectronico, date in documents:
             data.append({
                 "obraTitulo": obraTitulo,
@@ -77,7 +78,8 @@ class InformeService:
     def get_deserialize_humanindex(self, db, time_lapse, time, data_key, page=0, sex=None, title=None):
         data = []
         from_date, to_date = self._get_from_to_date(time_lapse, time)
-        documents = self.informe_repository.get_deserialize_humanindex(db, from_date, to_date, data_key, page, sex, title)
+        documents = self.informe_repository.get_deserialize_humanindex(db, from_date, to_date, data_key, page, sex,
+                                                                       title)
         for i, obraTitulo, obraEditorial, titulo, accesoElectronico, date in documents:
             data.append({
                 "obraTitulo": obraTitulo,
@@ -94,17 +96,61 @@ class InformeService:
         )
         return deserializeDoc
 
+    def get_deserialize_projects(self, db, time_lapse, time, data_key, page=0, sex=None, title=None,
+                                 participaciones=False):
+        data = []
+        from_date, to_date = self._get_from_to_date(time_lapse, time)
+        projects = self.informe_repository.get_deserialize_projects(db, from_date, to_date, data_key, page, sex, title,
+                                                                    participaciones)
+        for i, nombre, situacion, area, date in projects:
+            data.append({
+                "nombre": nombre,
+                "situacion": situacion,
+                "area": area,
+                "fechaSituacion": date
+            })
+
+        deserializeProjects = DeserializeDTO(
+            data_type="documents",
+            data_key=data_key,
+            data=data
+        )
+        return deserializeProjects
+
+    def get_deserialize_patentes_secciones(self, db, data_key, page=0, title=None):
+        data = []
+        section_name_mapping = {"Química": "CHEMISTRY; METALLURGY",
+                                "Electricidad": "ELECTRICITY",
+                                "Construcciones": "FIXED CONSTRUCTIONS",
+                                "Necesidades Humanas": "HUMAN NECESSITIES",
+                                "Ingeniería": "MECHANICAL ENGINEERING; LIGHTING; HEATING; WEAPONS; BLASTING",
+                                "Transporte": "PERFORMING OPERATIONS; TRANSPORTING",
+                                "Física": "PHYSICS"}
+        patents = self.informe_repository.get_deserialize_patentes(db, section_name_mapping[data_key], page, title)
+        for i, titulo, date, seccion in patents:
+            data.append({
+                "titulo": titulo,
+                "fechaConcesion": date,
+                "seccion": seccion
+            })
+
+        deserializePatents = DeserializeDTO(
+            data_type="patentes-secciones",
+            data_key=data_key,
+            data=data
+        )
+        return deserializePatents
+
     def _get_from_to_date(self, time_lapse, time):
         if time_lapse == "year":
             return f"{time}-01-01", f"{time}-12-31"
         else:
-            if time.split("-")[1] in ["01", "03", "05", "07","08", "10", "12"]:
+            if time.split("-")[1] in ["01", "03", "05", "07", "08", "10", "12"]:
                 return f"{time}-01", f"{time}-31"
             elif time.split("-")[1] == "02":
                 return f"{time}-01", f"{time}-28"
             else:
                 return f"{time}-01", f"{time}-30"
-
 
     def get_articles_by_year(self, db, sex="ambos"):
         articles = self._get_articles(db, lambda date: date.year, sex)
@@ -117,9 +163,32 @@ class InformeService:
         return articles
 
     def get_documents_by_year(self, db, sex="ambos"):
+        # data = {}
+        # keys = []
+        # min_year = math.inf
+        # max_year = -math.inf
+        # name_gen = lambda d: d.year if time_lapse == "year" else f"{d.year}-{d.month}"
+
+
+
         documents = self._get_documents(db, lambda date: date.year, sex)
         documents.time_lapse = "year"
         return documents
+
+    def append_type_to_data(self, db, sex, time_lapse, name_gen, data, data_type):
+        for date, c in self.informe_repository.get_libros_wos_count(db, sex, time_lapse, data_type):
+            key = name_gen(date)
+            year = date.year
+            if year < min_year:
+                min_year = year
+            if year > max_year:
+                max_year = year
+
+            if key not in data:
+                data[key] = {"name": key, "wos": c}
+            else:
+                    data[key]["wos"] = c
+
 
     def get_documents_by_month(self, db, sex="ambos"):
         documents = self._get_documents(db, lambda date: f"{date.year}-{date.month:02d}", sex)
@@ -223,7 +292,8 @@ class InformeService:
         min_year = math.inf
         max_year = -math.inf
 
-        for i, start_date, situation_date, conv, participante in self.informe_repository.get_participaciones_proyectos(db, sex):
+        for i, start_date, situation_date, conv, participante in self.informe_repository.get_participaciones_proyectos(
+                db, sex):
             year = situation_date.year
             key = year
             adding_flag = False
@@ -325,6 +395,19 @@ class InformeService:
         )
 
         return patents
+
+    def get_patentes_count(self, db):
+        data = []
+        section_name_mapping = {"CHEMISTRY; METALLURGY": "Química",
+                                "ELECTRICITY": "Electricidad",
+                                "FIXED CONSTRUCTIONS": "Construcciones",
+                                "HUMAN NECESSITIES": "Necesidades Humanas",
+                                "MECHANICAL ENGINEERING; LIGHTING; HEATING; WEAPONS; BLASTING": "Ingeniería",
+                                "PERFORMING OPERATIONS; TRANSPORTING": "Transporte",
+                                "PHYSICS": "Física"}
+        for i, (section, count) in enumerate(self.informe_repository.get_patentes_count(db)):
+            data.append({"section": section_name_mapping[section], "val": count})
+        return data
 
     def _get_humanindex(self, db, name_gen, sex):
         data = {}
